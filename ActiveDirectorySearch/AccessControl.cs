@@ -23,37 +23,35 @@ namespace ActiveDirectorySearch
         //privileged access control procedures
         private static void PrivilegedAccess(PrincipalContext pc)
         {
-            List<string> privilegedGroups = new List<string>(new string[] { "Domain Admins"});
-            List<string> privilegedGroupsFull = new List<string>(new string[] { "Domain Admins",
+            //List<string> privilegedGroups = new List<string>(new string[] { "Domain Admins"});
+            List<string> privilegedGroups = new List<string>(new string[] { "Domain Admins",
                 "Administrators", "Enterprise Admins", "Group Policy Admins", "Schema Admins",
                 "DNS Admins", "Account Operators", "Server Operators"});
-            List<UserPrincipal> privilegedUsers = new List<UserPrincipal>();
+            HashSet<UserPrincipal> privilegedUsers = new HashSet<UserPrincipal>();
             foreach (var listGroup in privilegedGroups)
             {
-                //Console.WriteLine("\n{0}\n", listGroup);
                 var gp = new GroupPrincipal(pc, listGroup);
                 var searcher = new PrincipalSearcher();
                 searcher.QueryFilter = gp;
                 var group = searcher.FindOne() as GroupPrincipal;
                 if (group == null)
                 {
-                    Console.WriteLine("Group is empty.");
+                    Console.WriteLine("{0} is empty", listGroup);
                 }
                 else
                 {
+                    Console.WriteLine("Extracting {0}", listGroup);
                     getAllUserPrinicpals(ref privilegedUsers, group);
                 }
             }
-
-            var privHash = new HashSet<UserPrincipal>(privilegedUsers);
-            foreach (var item in privHash)
+            foreach (var item in privilegedUsers)
             {
                 Console.WriteLine(item.Name + "----" + item.PasswordNeverExpires);
             }
         }
 
         //gets all users in a list
-        public static void getAllUserPrinicpals(ref List<UserPrincipal> principals, GroupPrincipal principal)
+        public static void getAllUserPrinicpals(ref HashSet<UserPrincipal> principals, GroupPrincipal principal)
         {
             foreach (Principal princ in principal.Members)
             {

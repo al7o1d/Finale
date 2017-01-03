@@ -13,13 +13,10 @@ namespace ActiveDirectorySearch
         //main method OBVIOUSLY
         static void Main(string[] args)
         {
-            Console.Write("Username: ");
-            string username = Console.ReadLine();
-            Console.Write("Password: ");
-            string password = new System.Net.NetworkCredential(string.Empty, GetPassword()).Password;
-            var principalConnector = ConnectPrincipal(username, password);
+            var pc = ValidateCredentials();
+            //var principalConnector = ConnectPrincipal(username, password);
             //var directoryConnector = ConnectDirectory(username, password);
-            AccessControl.StartAccessControl(principalConnector);
+            AccessControl.StartAccessControl(pc);
         }
 
         //method to show star when password is typed
@@ -47,21 +44,43 @@ namespace ActiveDirectorySearch
                     Console.Write("*");
                 }
             }
+            Console.Write("\n");
             return pwd;
         }
 
+        private static PrincipalContext ValidateCredentials()
+        {
+            PrincipalContext pc = null;
+            var domain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
+            Console.Write("Username: ");
+            string username = Console.ReadLine();
+            Console.Write("Password: ");
+            string password = new System.Net.NetworkCredential(string.Empty, GetPassword()).Password;
+            try
+            {
+                pc = new PrincipalContext(ContextType.Domain, domain);
+                if (!pc.ValidateCredentials(username, password))
+                {
+
+                    Console.WriteLine("Wrong username or password!");
+                    return ValidateCredentials();
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error: " + e.Message);
+            }
+            var connect = ConnectPrincipal(username, password, domain);
+            return connect;
+        }
+
         //connects to LDAP using 'PrincipalContext' class - new way
-        private static PrincipalContext ConnectPrincipal(string username, string password)
+        private static PrincipalContext ConnectPrincipal(string username, string password, string domain)
         {
             PrincipalContext pc = null;
             try
             {
-                var domain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
-                pc = new PrincipalContext(ContextType.Domain, domain);
-                if (pc.ValidateCredentials(username, password))
-                    pc = new PrincipalContext(ContextType.Domain, domain, username, password);
-                else
-                    Console.WriteLine("Wrong Credentials!");
+                pc = new PrincipalContext(ContextType.Domain, domain, username, password);
             }
             catch (Exception e)
             {
