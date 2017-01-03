@@ -1,10 +1,8 @@
 ﻿using System;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
-using System.Linq;
 using System.Net.NetworkInformation;
 using System.Security;
-using System.Security.Principal;
 
 namespace ActiveDirectorySearch
 {
@@ -14,8 +12,8 @@ namespace ActiveDirectorySearch
         static void Main(string[] args)
         {
             var pc = ValidateCredentials();
-            //var principalConnector = ConnectPrincipal(username, password);
-            //var directoryConnector = ConnectDirectory(username, password);
+            if(pc == null)
+                Environment.Exit(1);
             AccessControl.StartAccessControl(pc);
         }
 
@@ -48,10 +46,15 @@ namespace ActiveDirectorySearch
             return pwd;
         }
 
-        private static PrincipalContext ValidateCredentials()
+        //validates credentials, loops until correct; starts connection methods
+        private static Tuple<PrincipalContext, DirectoryEntry> ValidateCredentials()
         {
             PrincipalContext pc = null;
+            Tuple<PrincipalContext, DirectoryEntry> returnTuple = null;
+            PrincipalContext connectPc = null;
+            DirectoryEntry connectDe = null;
             var domain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
+
             Console.Write("Username: ");
             string username = Console.ReadLine();
             Console.Write("Password: ");
@@ -61,17 +64,19 @@ namespace ActiveDirectorySearch
                 pc = new PrincipalContext(ContextType.Domain, domain);
                 if (!pc.ValidateCredentials(username, password))
                 {
-
                     Console.WriteLine("Wrong username or password!");
                     return ValidateCredentials();
                 }
+                connectPc = ConnectPrincipal(username, password, domain);
+                connectDe = new DirectoryEntry("LDAP://" + IPGlobalProperties.GetIPGlobalProperties().DomainName);
+                connectDe.AuthenticationType = AuthenticationTypes.Secure;
+                returnTuple = new Tuple<PrincipalContext, DirectoryEntry>(connectPc, connectDe);
             }
             catch(Exception e)
             {
                 Console.WriteLine("Error: " + e.Message);
             }
-            var connect = ConnectPrincipal(username, password, domain);
-            return connect;
+            return returnTuple;
         }
 
         //connects to LDAP using 'PrincipalContext' class - new way
@@ -90,7 +95,7 @@ namespace ActiveDirectorySearch
         }
 
         //connects to LDAP using 'DirectoryEntry' class - old way
-        private static DirectoryEntry ConnectDirectory(string username, string password)
+        public static DirectoryEntry ConnectDirectory(string username, string password)
         {
             DirectoryEntry de = null;
             try
@@ -104,6 +109,5 @@ namespace ActiveDirectorySearch
             }
             return de;
         }
-        
     }
 }

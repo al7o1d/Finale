@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 using System.Linq;
-using System.Management;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ActiveDirectorySearch
 {
@@ -14,10 +11,11 @@ namespace ActiveDirectorySearch
 
 
         //starts access control testing procedures
-        public static void StartAccessControl(PrincipalContext pc)
+        public static void StartAccessControl(Tuple<PrincipalContext, DirectoryEntry> connectionTuple)
         {
-            //TestMethod(pc);
-            PrivilegedAccess(pc);
+            GPO(connectionTuple.Item2);
+            //TestMethod(connectionTuple.Item1);
+            //PrivilegedAccess(connectionTuple.Item1);
         }
 
         //privileged access control procedures
@@ -46,7 +44,8 @@ namespace ActiveDirectorySearch
             }
             foreach (var item in privilegedUsers)
             {
-                Console.WriteLine(item.Name + "----" + item.PasswordNeverExpires);
+                if(item.PasswordNeverExpires)
+                    Console.WriteLine(item.Name + " is active?: " + item.Enabled);
             }
         }
 
@@ -58,7 +57,10 @@ namespace ActiveDirectorySearch
                 if (princ is UserPrincipal)
                     principals.Add((UserPrincipal)princ);
                 else if (princ is GroupPrincipal)
+                {
+                    Console.WriteLine(">> Extracting {0}", princ.Name);
                     getAllUserPrinicpals(ref principals, (GroupPrincipal)princ);
+                }
             }
         }
 
@@ -162,6 +164,11 @@ namespace ActiveDirectorySearch
             {
                 Console.WriteLine("Error: " + e.Message);
             }
+        }
+
+        private static void GPO(DirectoryEntry de)
+        {
+            Console.WriteLine("GPO");
         }
     }
 }
