@@ -70,6 +70,20 @@ namespace ActiveDirectorySearch
             return pc;
         }
 
+        private static DirectoryEntry ConnectDirectory2(string username, string password)
+        {
+            DirectoryEntry de = null;
+            try
+            {
+                de = new DirectoryEntry("LDAP://" + IPGlobalProperties.GetIPGlobalProperties().DomainName);
+                de.AuthenticationType = AuthenticationTypes.Secure;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("\nError: " + e.Message);
+            }
+            return de;
+        }
         //connects to LDAP using 'DirectoryEntry' class - old way
         private static DirectoryEntry ConnectDirectory(string username, string password)
         {
